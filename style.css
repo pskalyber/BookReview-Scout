@@ -1,0 +1,48 @@
+/* 1. 컨테이너: 교보문고의 상위 ID를 포함하여 우선순위 확보 */
+#contents .prod_detail_view_area #review-bridge-container {
+    display: block;
+    width: 100% !important; /* 가로 한 줄을 강제로 점유하기 위해 유지 */
+    margin: 12px 0 6px 0;
+    padding: 0;
+    clear: both;
+}
+
+/* 2. YES24 배지 기본 스타일 */
+#review-bridge-container .yes24-review-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    background-color: #f1f5fb;
+    border: 1px solid #d1d9e4;
+    border-radius: 4px;
+    color: #2b5797;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+/* 마우스 오버 시 피드백 */
+#review-bridge-container .yes24-review-badge:hover {
+    background-color: #e2eaf5;
+    border-color: #2b5797;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* 3. 텍스트 강조 (리뷰 숫자) */
+#review-bridge-container .yes24-review-badge strong {
+    margin: 0 4px;
+    font-weight: 800;
+    color: #1a3a6d;
+}
+
+/* 4. 별점 영역 (구분선 포함) */
+#review-bridge-container .rating-score {
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid #ccd4e0;
+    color: #ff9900;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}

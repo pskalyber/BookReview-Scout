@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Kyobo-YES24 Review Bridge",
+  "version": "1.0",
+  "permissions": ["scripting"],
+  "host_permissions": [
+    "https://*.kyobobook.co.kr/*",
+    "https://*.yes24.com/*",
+    "https://*.aladin.co.kr/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://product.kyobobook.co.kr/detail/*"],
+      "js": ["content.js"],
+      "css": ["style.css"]
+    }
+  ]
+}
