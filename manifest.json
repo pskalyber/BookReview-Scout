@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Kyobo-YES24 Review Bridge",
+  "name": "BookReview Scouter for for Kyobobook",
   "version": "1.0",
   "permissions": ["scripting"],
   "host_permissions": [

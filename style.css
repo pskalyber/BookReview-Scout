@@ -8,7 +8,7 @@
 }
 
 /* 2. YES24 배지 기본 스타일 */
-#review-bridge-container .yes24-review-badge {
+#review-bridge-container .review-badge {
     display: inline-flex;
     align-items: center;
     padding: 6px 14px;
@@ -21,17 +21,19 @@
     text-decoration: none;
     line-height: 1;
     transition: all 0.2s ease;
+    margin-bottom: 10px;
+
 }
 
 /* 마우스 오버 시 피드백 */
-#review-bridge-container .yes24-review-badge:hover {
+#review-bridge-container .review-badge:hover {
     background-color: #e2eaf5;
     border-color: #2b5797;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 /* 3. 텍스트 강조 (리뷰 숫자) */
-#review-bridge-container .yes24-review-badge strong {
+#review-bridge-container .review-badge strong {
     margin: 0 4px;
     font-weight: 800;
     color: #1a3a6d;
