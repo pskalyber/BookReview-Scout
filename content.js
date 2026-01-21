@@ -22,7 +22,7 @@ const parseHTML = (html, searchUrl, site) => {
   
   // 리뷰 개수 추출
   let reviewCountSelectors;
-  if (site=='yes24') {
+  if (site==='yes24') {
     reviewCountSelectors = [
       ".rating_rv em",             // 목록형 1
       ".gd_reviewCount",           // 상세형 1
@@ -31,7 +31,7 @@ const parseHTML = (html, searchUrl, site) => {
       ".txC_blue"                  // 구형/기타
     ];
   }
-  else if (site='aladin') {
+  else if (site==='aladin') {
     reviewCountSelectors = [
       ".star_score + a",             // 목록형 1
     ];
@@ -53,13 +53,13 @@ const parseHTML = (html, searchUrl, site) => {
 
   // 평점 추출
   let ratingSelectors;
-  if (site=='yes24') {
+  if (site==='yes24') {
     ratingSelectors = [
       "#yesSchList > li > div > div.item_info > div.info_row.info_rating > span.rating_grade > em", // ISBN 검색 결과 페이지에서의 평점
       "#spanGdRating > a > em" // 특정 도서 상세 페이지에서의 평점
     ];
   }
-  else if (site='aladin') {
+  else if (site==='aladin') {
     ratingSelectors = [
       ".star_score", // ISBN 검색 결과 페이지에서의 평점
     ];
@@ -82,11 +82,11 @@ const parseHTML = (html, searchUrl, site) => {
   // 도서 상세 페이지 링크 추출
   let linkElem;
   let detailUrl;
-  if (site=='yes24') {
+  if (site==='yes24') {
     linkElem = doc.querySelector(".gd_name");
     detailUrl = `https://www.yes24.com${linkElem?.getAttribute("href")}`;
   }
-  else if (site='aladin') {
+  else if (site==='aladin') {
     linkElem = doc.querySelector(".cover_area > a");
     detailUrl = linkElem?.getAttribute("href");
   }
@@ -149,7 +149,7 @@ const main = async () => {
         badge.innerHTML = `${site.name.charAt(0).toUpperCase()+site.name.slice(1)} 리뷰 <strong>${data.count}</strong>개 ${starHtml}`;
         
         bridgeContainer.appendChild(badge);
-        bridgeContainer.appendChild('<br>');
+        bridgeContainer.appendChild(document.createElement("br"));
       }
     });
   }
