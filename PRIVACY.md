@@ -28,8 +28,7 @@ We do not control the privacy practices of these third-party services.
 ## 4. Contact
 If you have any questions about this Privacy Policy, please contact the developer:
 * **Developer:** Sangkeun Park
-* **Research Lab:** User eXperience Computing (UXC) Lab
-* **Email:** [교수님의 이메일 주소를 입력하세요]
+* **Email:** pskalyber@gmail.com
 
 ---
 
@@ -58,5 +57,4 @@ If you have any questions about this Privacy Policy, please contact the develope
 ## 4. 문의하기
 본 개인정보처리방침과 관련하여 문의사항이 있으신 경우 아래로 연락 주시기 바랍니다.
 * **개발자:** 박상근
-* **연구실:** 사용자경험컴퓨팅 (UXC) 연구실
-* **이메일:** [교수님의 이메일 주소를 입력하세요]
+* **이메일:** pskalyber@gmail.com
