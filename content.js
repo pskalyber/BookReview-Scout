@@ -24,16 +24,12 @@ const parseHTML = (html, searchUrl, site) => {
   let reviewCountSelectors;
   if (site==='yes24') {
     reviewCountSelectors = [
-      ".rating_rv em",             // 목록형 1
-      ".gd_reviewCount",           // 상세형 1
-      "#spanReviewCount",          // 상세형 2
-      ".review em",                // 목록형 2
-      ".txC_blue"                  // 구형/기타
+      ".info_rating .txC_blue"
     ];
   }
   else if (site==='aladin') {
     reviewCountSelectors = [
-      ".star_score + a",             // 목록형 1
+      ".star_score + a"
     ];
   }
   else {
@@ -42,11 +38,19 @@ const parseHTML = (html, searchUrl, site) => {
   let reviewCount = "0";
   for (let s of reviewCountSelectors) {
     const elem = doc.querySelector(s);
-    if (elem && elem.innerText.trim() !== "") {
-      const num = elem.innerText.replace(/[^0-9]/g, "");
-      if (num && num !== "0") {
-        reviewCount = num;
-        break;
+    if (elem) {
+      // 검색 결과가 없으면
+      if (elem.innerText.includes('결과가 없습니다.')) {
+        reviewCount = "0";
+        break; 
+      }
+      // 검색 결과가 있으면
+      else {
+        const num = elem.innerText.replace(/[^0-9]/g, "");
+        if (num && num !== "0") {
+          reviewCount = num;
+          break;
+        }
       }
     }
   }
@@ -71,27 +75,40 @@ const parseHTML = (html, searchUrl, site) => {
   for (let s of ratingSelectors) {
     const elem = doc.querySelector(s);
     if (elem) {
-      const score = elem.innerText.trim();
-      if (score && score !== "0" && score !== "0.0") {
-        ratingScore = score;
-        break;
+      // 검색 결과가 없으면
+      if (elem.innerText.includes('결과가 없습니다.')) {
+        reviewCount = "0";
+        break; 
+      }
+      else {
+        const score = elem.innerText.trim();
+        if (score && score !== "0" && score !== "0.0") {
+          ratingScore = score;
+          break;
+        }
       }
     }
   }
   
   // 도서 상세 페이지 링크 추출
   let linkElem;
-  let detailUrl;
+  let detailUrl = searchUrl;
   if (site==='yes24') {
     linkElem = doc.querySelector(".gd_name");
-    detailUrl = `https://www.yes24.com${linkElem?.getAttribute("href")}`;
+    const href = linkElem?.getAttribute("href");
+    if (href) {
+      detailUrl = `https://www.yes24.com${href}`;
+    }
   }
   else if (site==='aladin') {
     linkElem = doc.querySelector(".cover_area > a");
-    detailUrl = linkElem?.getAttribute("href");
+    const href = linkElem?.getAttribute("href");
+    if (href) {
+      detailUrl = linkElem?.getAttribute("href");
+    }
   }
   else {
-    alert('site is not defined.');
+    alert('Unknown site error.');
   }
   return { count: reviewCount, rating: ratingScore, detailUrl };
 };
