@@ -1,10 +1,12 @@
 # 🔍 BookReview Scouter
 > **Empowering Book Discovery with Cross-Platform Review Integration.**
 
+<br>
 <div align="center">
-  <img src="./images/screenshot.jpg" alt="BookReview Scouter Screenshot" width="100%" style="border: 1px border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+  <img src="./images/screenshot.jpg" alt="BookReview Scouter Screenshot" width="100%" style="border: 1px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
 </div>
 <br>
+
 **BookReview Scouter**는 사용자가 특정 온라인 서점에서 도서를 조회할 때, 타 주요 서점(YES24, 알라딘, 교보문고 등)의 리뷰 데이터와 평점을 실시간으로 수집하여 통합된 시각적 지표를 제공하는 크롬 확장 프로그램입니다. 
 
 본 프로젝트는 정보의 파편화를 해결하고, 사용자의 합리적인 도서 선택을 돕기 위해 개발되었습니다.
