@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "BookReview Scouter for for Kyobobook",
+  "name": "BookReview Scouter for Kyobobook",
   "version": "1.0",
   "permissions": ["scripting"],
   "host_permissions": [
