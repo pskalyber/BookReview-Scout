@@ -2,6 +2,19 @@
   "manifest_version": 3,
   "name": "BookReview Scouter for Kyobobook",
   "version": "1.0",
+  "description": "교보문고 도서 상세 페이지에서 YES24와 알라딘의 평점 및 리뷰 개수를 실시간으로 확인하고 비교하세요.",
+  "icons": {
+    "16": "icons/icon128.png",
+    "48": "icons/icon128.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icons/icon128.png",
+      "48": "icons/icon128.png",
+      "128": "icons/icon128.png"
+    }
+  },
   "permissions": ["scripting"],
   "host_permissions": [
     "https://*.kyobobook.co.kr/*",
