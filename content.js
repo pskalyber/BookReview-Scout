@@ -1,175 +1,240 @@
-// 1. ISBN 추출 (더 정교하게 추출)
-const getISBN = () => {
-  const jsonLd = document.querySelector('script[type="application/ld+json"]');
-  let isbn = "";
-  if (jsonLd) {
-    try {
-      const data = JSON.parse(jsonLd.innerText);
-      const obj = Array.isArray(data) ? data.find(item => item.isbn) : data;
-      isbn = obj?.isbn || obj?.["@graph"]?.find(it => it.isbn)?.isbn;
-    } catch (e) {}
-  }
-  if (!isbn) {
-    isbn = document.querySelector('meta[property="books:isbn"]')?.content;
-  }
-  return isbn ? isbn.replace(/[^0-9]/g, "") : null;
-};
-
-// HTML 파싱 (i.e., Yes24 or Aladin)
-const parseHTML = (html, searchUrl, site) => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, "text/html");
-  
-  // 리뷰 개수 추출
-  let reviewCountSelectors;
-  if (site==='yes24') {
-    reviewCountSelectors = [
-      ".info_rating .txC_blue"
-    ];
-  }
-  else if (site==='aladin') {
-    reviewCountSelectors = [
-      ".star_score + a"
-    ];
-  }
-  else {
-    alert('site is not defined.');
-  }
-  let reviewCount = "0";
-  for (let s of reviewCountSelectors) {
-    const elem = doc.querySelector(s);
-    if (elem) {
-      // 검색 결과가 없으면
-      if (elem.innerText.includes('결과가 없습니다.')) {
-        reviewCount = "0";
-        break; 
-      }
-      // 검색 결과가 있으면
-      else {
-        const num = elem.innerText.replace(/[^0-9]/g, "");
-        if (num && num !== "0") {
-          reviewCount = num;
-          break;
+const SITE_CONFIG = {
+  kyobo: {
+    name: "교보문고",
+    urlPatterns: ["*://product.kyobobook.co.kr/detail/*"],
+    searchUrl: (isbn) => `https://search.kyobobook.co.kr/search?keyword=${isbn}`,
+    getISBN: () => {
+      const jsonLd = document.querySelector('script[type="application/ld+json"]');
+      if (jsonLd) {
+        try {
+          const data = JSON.parse(jsonLd.innerText);
+          const product = Array.isArray(data) ? data.find(item => item.isbn) : data;
+          const isbn = product?.isbn || product?.["@graph"]?.find(it => it.isbn)?.isbn;
+          if (isbn) return isbn.replace(/[^0-9]/g, "");
+        } catch (e) {
+          console.error("BookReview Scouter: JSON-LD parsing error.", e);
         }
       }
+      const isbnMeta = document.querySelector('meta[property="books:isbn"]')?.content;
+      return isbnMeta ? isbnMeta.replace(/[^0-9]/g, "") : null;
+    },
+    getInjectionPoint: () => {
+      return document.querySelector(".prod_detail_view_area .prod_review_box");
+    },
+    parseSearchPage: (html, searchUrl) => {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const firstResult = doc.querySelector(".prod_item");
+      if (!firstResult) return { count: "0", rating: "0", detailUrl: searchUrl };
+      
+      const rating = firstResult.querySelector(".review_klover_box > .review_klover_text ")?.innerText.trim() || "0";
+      const count = firstResult.querySelector(".review_klover_box > .review_desc")?.innerText.replace(/[^0-9]/g, "") || "0";
+      const detailUrl = firstResult.querySelector("a.prod_info")?.href || searchUrl;
+      return { count, rating, detailUrl };
     }
-  }
-
-  // 평점 추출
-  let ratingSelectors;
-  if (site==='yes24') {
-    ratingSelectors = [
-      "#yesSchList > li > div > div.item_info > div.info_row.info_rating > span.rating_grade > em", // ISBN 검색 결과 페이지에서의 평점
-      "#spanGdRating > a > em" // 특정 도서 상세 페이지에서의 평점
-    ];
-  }
-  else if (site==='aladin') {
-    ratingSelectors = [
-      ".star_score", // ISBN 검색 결과 페이지에서의 평점
-    ];
-  }
-  else {
-    alert('site is not defined.');
-  } 
-  let ratingScore = "0";
-  for (let s of ratingSelectors) {
-    const elem = doc.querySelector(s);
-    if (elem) {
-      // 검색 결과가 없으면
-      if (elem.innerText.includes('결과가 없습니다.')) {
-        reviewCount = "0";
-        break; 
-      }
-      else {
-        const score = elem.innerText.trim();
-        if (score && score !== "0" && score !== "0.0") {
-          ratingScore = score;
-          break;
+  },
+  yes24: {
+    name: "YES24",
+    urlPatterns: ["*://www.yes24.com/product/goods/*"],
+    searchUrl: (isbn) => `https://www.yes24.com/product/search?domain=book&query=${isbn}`,
+    getISBN: () => {
+      // 1. Try JSON-LD
+      try {
+        const jsonLd = document.querySelector('script[type="application/ld+json"]');
+        if (jsonLd) {
+          const data = JSON.parse(jsonLd.innerText);
+          if (data.isbn) {
+            const isbn = data.isbn.replace(/[^0-9]/g, "");
+            if (isbn) return isbn;
+          }
         }
+      } catch (e) {}
+
+      // 2. Try meta tags (og:barcode seems to be used by yes24)
+      try {
+        const metaIsbn = document.querySelector('meta[property="og:barcode"]')?.content;
+        if (metaIsbn) {
+            const isbn = metaIsbn.replace(/[^0-9]/g, "");
+            if (isbn) return isbn;
+        }
+      } catch (e) {}
+
+      // 3. Fallback to searching the table
+      try {
+        const ths = Array.from(document.querySelectorAll("#infoset_specific th"));
+        const isbnTh = ths.find(th => th.innerText.trim().includes("ISBN"));
+        if (isbnTh) {
+          const td = isbnTh.nextElementSibling;
+          if (td) {
+            const isbn = td.innerText.match(/\d{10,13}/)?.[0];
+            if (isbn) return isbn;
+          }
+        }
+      } catch (e) {}
+
+      return null;
+    },
+    getInjectionPoint: () => {
+      return document.querySelector("#yDetailTopWrap > div.topColRgt > div.gd_infoTop > span.gd_ratingArea");
+    },
+    parseSearchPage: (html, searchUrl) => {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const hasNoResult = doc.querySelector(".sch_rslt_list")?.innerText.includes("검색결과가 없습니다.");
+      if (hasNoResult) return { count: "0", rating: "0", detailUrl: searchUrl };
+
+      const firstResult = doc.querySelector("#yesSchList li:first-child");
+      if (!firstResult) return { count: "0", rating: "0", detailUrl: searchUrl };
+
+      const rating = firstResult.querySelector(".rating_grade em")?.innerText.trim() || "0";
+      const countText = firstResult.querySelector(".info_rating .txC_blue")?.innerText || "";
+      const count = countText.replace(/[^0-9]/g, "") || "0";
+      const detailUrl = "https://www.yes24.com" + (firstResult.querySelector(".gd_name")?.getAttribute("href") || "");
+      
+      return { count, rating, detailUrl };
+    }
+  },
+  aladin: {
+    name: "알라딘",
+    urlPatterns: ["*://www.aladin.co.kr/shop/wproduct.aspx*"],
+    searchUrl: (isbn) => `https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Book&SearchWord=${isbn}`,
+    getISBN: () => {
+      // 1. Try JSON-LD
+      try {
+        const jsonLdElement = document.querySelector('script[type="application/ld+json"]');
+        if (jsonLdElement) {
+          const jsonLd = JSON.parse(jsonLdElement.innerText);
+          const graph = jsonLd['@graph'] || [jsonLd];
+          for (const item of graph) {
+            if ((item['@type'] === 'Book' || item['@type'] === 'Product') && item.isbn) {
+              const isbn = item.isbn.replace(/[^0-9]/g, "");
+              if (isbn) return isbn;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("BookReview Scouter: Could not parse JSON-LD on Aladin.", e);
       }
+      
+      // 2. Try meta tags
+      try {
+          let metaIsbn = document.querySelector('meta[property="books:isbn"]')?.content;
+          if (!metaIsbn) {
+            metaIsbn = document.querySelector('meta[property="og:barcode"]')?.content;
+          }
+          if (metaIsbn) {
+              const isbn = metaIsbn.replace(/[^0-9]/g, "");
+              if (isbn) return isbn;
+          }
+      } catch(e) {}
+
+      // 3. Fallback to searching the table
+      try {
+        const listItems = document.querySelectorAll(".conts_info_list li");
+        const isbnLi = [...listItems].find(item => item.innerText.includes("ISBN"));
+        if(isbnLi) {
+            const isbn = isbnLi.innerText.match(/\d{10,13}/)?.[0];
+            if (isbn) return isbn;
+        }
+      } catch(e) { console.error("BookReview Scouter: ISBN parsing error on Aladin.", e); }
+
+      return null;
+    },
+    getInjectionPoint: () => {
+      // 리뷰 섹션 하단에 임시로 추가
+      const reviewSection = document.querySelector("div.info_list.Ere_fs15.Ere_ht18");
+      if (reviewSection) return reviewSection;
+      return document.querySelector(".Ere_prod_starwrap"); // 대체 위치
+    },
+    parseSearchPage: (html, searchUrl) => {
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const firstResult = doc.querySelector(".ss_book_box");
+      if (!firstResult) return { count: "0", rating: "0", detailUrl: searchUrl };
+
+      const rating = firstResult.querySelector(".star_score")?.innerText.trim() || "0";
+      
+      const countEl = firstResult.querySelector(".star_score + a");
+      const count = countEl ? countEl.innerText.replace(/[^0-9]/g, "") : "0";
+      
+      const detailUrl = firstResult.querySelector(".cover_area > a")?.href || searchUrl;
+
+      return { count, rating, detailUrl };
     }
   }
-  
-  // 도서 상세 페이지 링크 추출
-  let linkElem;
-  let detailUrl = searchUrl;
-  if (site==='yes24') {
-    linkElem = doc.querySelector(".gd_name");
-    const href = linkElem?.getAttribute("href");
-    if (href) {
-      detailUrl = `https://www.yes24.com${href}`;
-    }
-  }
-  else if (site==='aladin') {
-    linkElem = doc.querySelector(".cover_area > a");
-    const href = linkElem?.getAttribute("href");
-    if (href) {
-      detailUrl = linkElem?.getAttribute("href");
-    }
-  }
-  else {
-    alert('Unknown site error.');
-  }
-  return { count: reviewCount, rating: ratingScore, detailUrl };
 };
 
-
-// 메인 로직
 const main = async () => {
+  const currentUrl = window.location.href;
+  let currentSiteKey = null;
 
-  // 현재 도서 상세 페이지에서 해당 도서의 ISBN 추출
-  const isbn = getISBN();
-  if (!isbn) return;
+  for (const key in SITE_CONFIG) {
+    const site = SITE_CONFIG[key];
+    const isCurrentSite = site.urlPatterns.some(pattern => {
+        const regex = new RegExp(pattern.replace(/\*/g, '.*?'));
+        return regex.test(currentUrl);
+    });
+    if (isCurrentSite) {
+      currentSiteKey = key;
+      break;
+    }
+  }
 
-  // 교보문고 상단 리뷰 영: 역타 서비스에서 해당 도서의 리뷰 개수와 리뷰 평점 정보를 추가할 공간
-  const targetArea = document.querySelector("#contents > div.prod_detail_header > div > div.prod_detail_view_wrap > div.prod_detail_view_area > div:nth-child(1) > div > div.prod_review_box");
-  if (!targetArea) {
-    // 페이지 로딩 지연 대응: targetArea 못 찾으면 1초 후 재시도
-    setTimeout(main, 1000);
+  if (!currentSiteKey) {
     return;
   }
 
-  // 중복 생성 방지: 이미 해당 영역에 이미 타 서비스의 리뷰 정보가 추가되었는지 확인
+  const currentSite = SITE_CONFIG[currentSiteKey];
+  const isbn = currentSite.getISBN();
+
+  if (!isbn) {
+    console.error("BookReview Scouter: ISBN not found on this page.");
+    return;
+  }
+
+  const injectionPoint = currentSite.getInjectionPoint();
+  if (!injectionPoint) {
+    setTimeout(main, 1000); // 페이지 로딩 지연을 고려하여 1초 후 재시도
+    return;
+  }
+  
   if (document.getElementById("review-bridge-container")) return;
 
-  // 버튼의 부모 요소(.prod_review_box)를 찾아 그 끝에 리뷰를 추가할 영역을 append
-  const parentContainer = targetArea.parentElement;
-  const bridgeContainer = document.createElement("div");
-  bridgeContainer.id = "review-bridge-container";
-  parentContainer.appendChild(bridgeContainer); 
+  const container = document.createElement("div");
+  container.id = "review-bridge-container";
+  
+  // 교보문고는 기존 구조를 유지하고, 다른 사이트들은 하단에 추가합니다.
+  if (currentSiteKey === 'kyobo') {
+      const parentContainer = injectionPoint.parentElement;
+      parentContainer.appendChild(container);
+  } else if (currentSiteKey === 'aladin') {
+      injectionPoint.appendChild(container);
+  } else {
+      injectionPoint.parentNode.insertBefore(container, injectionPoint.nextSibling);
+  }
 
-  // 서점 사이트 정보
-  const bookstoreSites = [
-    {
-      name: "yes24",
-      searchUrl: `https://www.yes24.com/Product/Search?domain=BOOK&query=${isbn}`,
-    },
-    {
-      name: "aladin",
-      searchUrl: `https://www.aladin.co.kr/search/wsearchresult.aspx?SearchTarget=Book&SearchWord=${isbn}`,
-    }
-  ];
+  const sitesToFetch = Object.keys(SITE_CONFIG).filter(key => key !== currentSiteKey);
 
-  // 각 서점 사이트 순회하며 정보 추출 후 업데이트
-  for (const site of bookstoreSites) {
-    const searchUrl = site.searchUrl;
-    chrome.runtime.sendMessage({ action: "fetchHTML", url: site.searchUrl }, (response) => {
+  for (const siteKey of sitesToFetch) {
+    const siteToParse = SITE_CONFIG[siteKey];
+    const searchUrl = siteToParse.searchUrl(isbn);
+    
+    chrome.runtime.sendMessage({ action: "fetchHTML", url: searchUrl }, (response) => {
       if (response && response.success) {
-        const data = parseHTML(response.html, searchUrl, site.name);
+        const data = siteToParse.parseSearchPage(response.html, searchUrl);
         
         const badge = document.createElement("a");
         badge.href = data.detailUrl;
         badge.target = "_blank";
         badge.className = 'review-badge';
         
-        const starHtml = (data.rating !== "0") ? `<span class="rating-score">⭐ ${data.rating}</span>` : "";
-        badge.innerHTML = `${site.name.charAt(0).toUpperCase()+site.name.slice(1)} 리뷰 <strong>${data.count}</strong>개 ${starHtml}`;
+        const starHtml = (data.rating !== "0" && data.rating !== "0.0") ? `<span class="rating-score">⭐ ${data.rating}</span>` : "";
+        badge.innerHTML = `${siteToParse.name} 리뷰 <strong>${data.count}</strong>개 ${starHtml}`;
         
-        bridgeContainer.appendChild(badge);
-        bridgeContainer.appendChild(document.createElement("br"));
+        container.appendChild(badge);
+      } else if (response && !response.success) {
+        console.error(`BookReview Scouter: Failed to fetch from ${siteToParse.name}.`, response.error);
       }
     });
   }
 };
 
-setTimeout(main, 1200); // 로딩 시간을 조금 더 넉넉히 부여
+// 페이지 로딩이 완료된 후 실행되도록 지연 시간을 줍니다.
+setTimeout(main, 1500);
